@@ -1,36 +1,44 @@
 targetScope = 'subscription'
 
-param listofAllowedLocations array {
-  default: [
-    'norwayeast'
-    'westeurope'
-  ]
-}
-param policyEffect string {
-  allowed:[
-    'Audit'
-    'Deny'
-  ]
-}
+@description('List of allowed locations for resource deployment.')
+param listofAllowedLocations array = [
+  'eastus'
+  'eastus2'
+]
 
+@allowed([
+  'Audit'
+  'Deny'
+])
+@description('Effect of the policy.')
+param policyEffect string = 'Deny'
+
+@description('Scope at which the policy should be assigned.')
 param assignmentScope string
 
-resource locationPolicyDefinition 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
+resource policyDef 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
   name: 'custom-allowed-location'
-  properties:{
-    displayName: 'Custom - allowed location for resources'
+  properties: {
+    displayName: 'Allowed Locations for Resource Deployment'
     policyType: 'Custom'
-    description: 'Use policy to restrict where resources can be deployed'
+    mode: 'All'
+    description: 'Restrict resource deployments to specific Azure regions.'
+    metadata: {
+      category: 'General'
+    }
     parameters: {
       allowedLocations: {
         type: 'Array'
+        metadata: {
+          description: 'The list of allowed locations.'
+        }
       }
       effect: {
         type: 'String'
+        metadata: {
+          description: 'Audit or Deny non-compliant resources.'
+        }
       }
-    }
-    metadata: {
-      category: 'Locations'
     }
     policyRule: {
       if: {
@@ -47,8 +55,8 @@ resource locationPolicyDefinition 'Microsoft.Authorization/policyDefinitions@202
             field: 'type'
             notEquals: 'Microsoft.AzureActiveDirectory/b2cDirectories'
           }
-      ]
-    }
+        ]
+      }
       then: {
         effect: '[parameters(\'effect\')]'
       }
@@ -56,22 +64,4 @@ resource locationPolicyDefinition 'Microsoft.Authorization/policyDefinitions@202
   }
 }
 
-resource locationPolicy 'Microsoft.Authorization/policyAssignments@2020-09-01' = {
- name: 'Resource-location-restriction'
- dependsOn: [
-   locationPolicyDefinition
- ]
- properties:{
-   policyDefinitionId: locationPolicyDefinition.id
-   displayName: 'Restrict location for Azure resources'
-   description: 'Policy will either Audit or Deny resources being deployed in other locations'
-   parameters: {
-     allowedLocations: {
-       value: listofAllowedLocations
-     }
-     Effect: {
-      value: policyEffect
-    }
-   }
- }
-}
+resource policyAssign

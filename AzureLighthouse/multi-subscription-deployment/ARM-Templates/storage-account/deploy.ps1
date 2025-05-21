@@ -10,10 +10,9 @@ $deploymentLocation = "westeurope"
 $templateFile = ".\ARM-Templates\storage-Account\azuredeploy.json"
 $templateParameterFile = ".\ARM-Templates\storage-Account\azuredeploy.parameters.json"
 
-# If you have a set of subs that never should have deployments
-# But is available to the service principal
+
 $excludedSubs = (
-    "6bcd4291-45b0-43sx-9345-f23cc4cabas1g"
+    ""
 
 )
 

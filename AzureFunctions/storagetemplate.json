@@ -1,0 +1,158 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "location": {
+        "type": "string",
+        "defaultValue": "eastus2"
+      },
+      "organization": {
+        "type": "string",
+        "defaultValue": "Slalom"
+      },
+      "aadClientId": {
+        "type": "string"
+      },
+      "tenantId": {
+        "type": "string"
+      }
+    },
+    "variables": {
+      "functionAppName": "[concat('funcapp-', uniqueString(resourceGroup().id))]",
+      "storageAccountName": "[toLower(concat('st', uniqueString(resourceGroup().id)))]",
+      "planName": "[concat('plan-', uniqueString(resourceGroup().id))]",
+      "vaultName": "[concat('vault-', uniqueString(resourceGroup().id))]",
+      "policyName": "daily-policy"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Storage/storageAccounts",
+        "apiVersion": "2022-09-01",
+        "name": "[variables('storageAccountName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "Standard_LRS"
+        },
+        "kind": "StorageV2",
+        "tags": {
+          "organization": "[parameters('organization')]"
+        },
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Web/serverfarms",
+        "apiVersion": "2022-03-01",
+        "name": "[variables('planName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "Y1",
+          "tier": "Dynamic"
+        },
+        "kind": "functionapp"
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "apiVersion": "2022-03-01",
+        "name": "[variables('functionAppName')]",
+        "location": "[parameters('location')]",
+        "kind": "functionapp",
+        "identity": {
+          "type": "SystemAssigned"
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+          "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        ],
+        "properties": {
+          "siteConfig": {
+            "appSettings": [
+              {
+                "name": "AzureWebJobsStorage",
+                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=core.windows.net')]"
+              },
+              {
+                "name": "FUNCTIONS_EXTENSION_VERSION",
+                "value": "~4"
+              },
+              {
+                "name": "FUNCTIONS_WORKER_RUNTIME",
+                "value": "node"
+              }
+            ]
+          },
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+          "httpsOnly": true
+        },
+        "tags": {
+          "organization": "[parameters('organization')]"
+        }
+      },
+      {
+        "type": "Microsoft.Web/sites/config",
+        "apiVersion": "2022-03-01",
+        "name": "[concat(variables('functionAppName'), '/authsettingsV2')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+        ],
+        "properties": {
+          "platform": {
+            "enabled": true
+          },
+          "globalValidation": {
+            "unauthenticatedClientAction": "RedirectToLoginPage"
+          },
+          "identityProviders": {
+            "azureActiveDirectory": {
+              "enabled": true,
+              "registration": {
+                "clientId": "[parameters('aadClientId')]",
+                "openIdIssuer": "[concat('https://login.microsoftonline.com/', parameters('tenantId'), '/v2.0')]"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "Microsoft.RecoveryServices/vaults",
+        "apiVersion": "2022-08-01",
+        "name": "[variables('vaultName')]",
+        "location": "[parameters('location')]",
+        "properties": {},
+        "tags": {
+          "organization": "[parameters('organization')]"
+        }
+      },
+      {
+        "type": "Microsoft.RecoveryServices/vaults/backupPolicies",
+        "apiVersion": "2023-02-01",
+        "name": "[concat(variables('vaultName'), '/', variables('policyName'))]",
+        "dependsOn": [
+          "[resourceId('Microsoft.RecoveryServices/vaults', variables('vaultName'))]"
+        ],
+        "properties": {
+          "backupManagementType": "AzureStorage",
+          "schedulePolicy": {
+            "schedulePolicyType": "SimpleSchedulePolicy",
+            "scheduleRunFrequency": "Daily"
+          },
+          "retentionPolicy": {
+            "retentionPolicyType": "LongTermRetentionPolicy",
+            "dailySchedule": {
+              "retentionTimes": ["2023-01-01T02:00:00Z"],
+              "retentionDuration": {
+                "count": 30,
+                "durationType": "Days"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "outputs": {
+      "functionAppUrl": {
+        "type": "string",
+        "value": "[concat('https://', variables('functionAppName'), '.azurewebsites.net')]"
+      }
+    }
+  }
+  
