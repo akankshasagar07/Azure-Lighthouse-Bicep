@@ -3,26 +3,16 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "mspOfferName": {
-            "value": "Managed Azure - Adatum.no"
+            "value": "Managed Azure - Slalom"
         },
         "mspOfferDescription": {
-            "value": "Managed Azure environment from Adatum"
+            "value": "Managed Azure environment from Slalom"
         },
         "managedByTenantId": {
-            "value": "22046864-98a9-4a9c-9285-db5ca5f83354"
+            "value": ""
         },
         "authorizations": {
             "value": [
-                {
-                    "principalId": "7bf2159d-5fc4-46d7-a2f2-311e0cec2b06",
-                    "principalIdDisplayName": "Tier 1 Support",
-                    "roleDefinitionId": "b24988ac-6180-42a0-ab88-20f7382dd24c"
-                },
-                {
-                    "principalId": "34575bee-1aed-4fc2-b4aa-4cd7481a0149",
-                    "principalIdDisplayName": "Backup operators",
-                    "roleDefinitionId": "00c29273-979b-4161-815c-10b084fb9324"
-                },
                 {
                     "principalId": "c46330bd-d384-4461-99f3-bae88722e211",
                     "principalIdDisplayName": "Automation accounts",
